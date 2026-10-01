@@ -1,0 +1,32 @@
+{
+  "agv_position": {
+    "x": 2.7661,
+    "y": -1.6368,
+    "angle_rad": 1.4392,
+    "angle_deg": 82.5
+  },
+  "lm3_workstation1": {
+    "x": -6.141,
+    "y": 8.283,
+    "source": "memory/2026-09-12.md (slam_demo_2d map)"
+  },
+  "distance_m": 13.33,
+  "diagnostics": {
+    "confidence": 0.1683,
+    "similarity": 0,
+    "loc_state": 1,
+    "current_station": "",
+    "last_station": ""
+  },
+  "battery": {
+    "level": 0.476,
+    "voltage": 49.12,
+    "temp_c": 30.0,
+    "charging": false
+  },
+  "speed": {
+    "vx": 0.0,
+    "w": 0.0,
+    "is_stop": true
+  }
+}

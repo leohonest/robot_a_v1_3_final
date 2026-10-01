@@ -1,0 +1,19 @@
+# 灵龙国庆版本 - Conda 环境 (2026-09-29)
+name: linglong
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - requests
+  - pip:
+    - webrtcvad>=2.0.10
+    - sounddevice>=0.4.5
+    - paramiko>=2.7.0
+    - flask>=2.0.0
+    - gunicorn
+    - transformers>=4.30.0
+    - torch>=2.0.0
+    - langchain>=0.1.0

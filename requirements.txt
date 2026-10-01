@@ -1,0 +1,35 @@
+# Python dependencies - 参考 environment.yaml (Conda 环境)
+# 重要: pip install -r requirements.txt 可能与 conda env 冲突
+# 推荐方式: conda env create -f environment.yaml
+# 备选: pip install (版本可能与 conda 不一致)
+#
+# 灵龙国庆版本 - Python 依赖清单 (2026-09-29)
+
+## 灵龙本体 (/home/user/) 环境
+webrtcvad>=2.0.10
+sounddevice>=0.4.5
+requests>=2.28.0
+numpy
+paramiko>=2.7.0
+# sshpass 是系统包（apt install sshpass），不作为 pip 依赖
+
+# 可选：
+# asr_server 模型：Qwen3-ASR 0.6B (HuggingFace 下载)
+#   模型路径：/home/kk/pythonProject/model/qwen3-asr-0.6b
+
+## DGX (/data/) Python 服务
+flask>=2.0.0
+gunicorn  # 生产用
+transformers>=4.30.0
+qwen-vl-utils
+torch>=2.0.0
+sentencepiece
+Pillow
+
+# LLM Orchestrator
+langchain>=0.3,<0.4
+openai>=1.0.0
+
+## Windows 端（v3_gui + v3_log_tail）
+# 标准库 tkinter / scrolledtext
+# paramiko (用于 v3_log_tail.py SSH)

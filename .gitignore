@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Sensitive files (NEVER commit)
+*.key
+*.pem
+config.local.yaml
+secrets.yaml
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# Local data
+*.db
+*.sqlite
+data/local/
+
+# AGV/SLAM specific
+*.smap.bak
+*.pcap
+
+# V1.3: 发布卫生
+*.bak.*
+*.scripts_old*
+*.windows_current
+*.apk
+memory_session_*.md

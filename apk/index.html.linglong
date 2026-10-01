@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>灵龙语音助手 v1.26</title>
+
+<style>
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+
+  width: 100%; height: 100%;
+
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei",
+
+               "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+
+               "Twemoji Mozilla", "EmojiOne Color", "Android Emoji", emoji, sans-serif;
+
+  background: #0e111a;
+
+  color: #fff;
+
+  overflow: hidden;
+
+  user-select: none;
+
+  -webkit-user-select: none;
+
+}
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+.header {
+
+  display: flex; align-items: center; justify-content: space-between;
+
+  padding: 12px 16px;
+
+  background: linear-gradient(135deg, #1a1f2e, #0e111a);
+
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+
+}
+
+.header-title {
+
+  font-size: 18px; font-weight: 700;
+
+  background: linear-gradient(135deg, #3c9cff, #5ac725);
+
+  -webkit-background-clip: text; background-clip: text;
+
+  -webkit-text-fill-color: transparent;
+
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", emoji, sans-serif;
+
+}
+
+.quick-cmd, .log-entry {
+
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", emoji, sans-serif;
+
+}
+
+.conn-status { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #aaa; }
+
+.conn-icon {
+
+  width: 16px; height: 16px;
+
+  display: inline-block;
+
+  border-radius: 50%;
+
+  background: #666;  /* 灰色：未连接 */
+
+  transition: background 0.3s;
+
+}
+
+.conn-icon.connected { background: #5ac725; box-shadow: 0 0 8px #5ac725; }   /* 绿色：已连 */
+
+.conn-icon.connecting { background: #f9ae3d; }                                 /* 橙色：连接中 */
+
+.conn-icon.disconnected { background: #ff4d4f; }                              /* 红色：失败 */
+
+.body { flex: 1; overflow-y: auto; padding: 12px; }
+
+.log-entry {
+
+  margin-bottom: 10px; padding: 10px 14px;
+
+  border-radius: 10px; background: rgba(255,255,255,0.05);
+
+  font-size: 14px; line-height: 1.5;
+
+}
+
+.log-entry.user { background: rgba(60, 156, 255, 0.2); border-left: 3px solid #3c9cff; }
+
+.log-entry.system { background: rgba(90, 199, 37, 0.15); border-left: 3px solid #5ac725; }
+
+.log-entry.warn { background: rgba(249, 174, 61, 0.15); border-left: 3px solid #f9ae3d; }
+
+.log-entry.error { background: rgba(255, 77, 79, 0.15); border-left: 3px solid #ff4d4f; }
+
+.log-entry.info { background: rgba(255,255,255,0.03); color: #888; font-size: 12px; }
+
+.quick-cmds { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+
+.quick-cmd {
+
+  padding: 8px 14px; background: rgba(60, 156, 255, 0.2);
+
+  border: 1px solid rgba(60, 156, 255, 0.4); border-radius: 18px;
+
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+
+}
+
+.quick-cmd:active { background: rgba(60, 156, 255, 0.5); transform: scale(0.95); }
+
+.input-area { padding: 12px; background: #1a1f2e; border-top: 1px solid rgba(255,255,255,0.1); }
+
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+
+.input-box {
+
+  flex: 1; min-height: 44px; max-height: 100px;
+
+  padding: 10px 14px; background: rgba(255,255,255,0.08);
+
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+
+  color: #fff; font-size: 14px; resize: none; outline: none; font-family: inherit;
+
+}
+
+.input-box:focus { border-color: #3c9cff; }
+
+.btn {
+
+  width: 44px; height: 44px; border-radius: 12px; border: none;
+
+  background: #3c9cff; color: #fff; font-size: 22px; cursor: pointer;
+
+  display: flex; align-items: center; justify-content: center;
+
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", "EmojiOne Color", "Android Emoji", emoji, sans-serif;
+
+  line-height: 1;
+
+  text-align: center;
+
+  padding: 0;
+
+}
+
+.btn:active { transform: scale(0.92); }
+
+.btn.voice { background: #5ac725; }
+
+.btn.voice.recording { background: #ff4d4f; animation: pulse 1s infinite; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+.btn.send { background: #3c9cff; }
+
+.voice-hint { font-size: 11px; color: #888; padding: 4px 12px; }
+
+
+
+/* ============ v1.18 底盘控制页 (tab + rocker) ============ */
+
+.tab-bar {
+
+  display: flex;
+
+  border-top: 1px solid rgba(255,255,255,0.1);
+
+  background: #1a1f2e;
+
+}
+
+.tab-item {
+
+  flex: 1;
+
+  padding: 8px 0;
+
+  text-align: center;
+
+  cursor: pointer;
+
+  color: #888;
+
+  transition: all 0.2s;
+
+}
+
+.tab-item.active {
+
+  color: #5ac725;
+
+  border-top: 2px solid #5ac725;
+
+}
+
+.tab-icon { font-size: 20px; line-height: 1; }
+
+.tab-label { font-size: 11px; margin-top: 2px; }
+
+
+
+.dir-btn {
+
+  transition: all 0.15s;
+
+}
+
+.dir-btn:active, .dir-btn.active {
+
+  background: rgba(60, 156, 255, 0.6) !important;
+
+  transform: scale(0.92);
+
+  box-shadow: 0 0 12px rgba(60, 156, 255, 0.6);
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+
+    <div class="header-title">🎙️ 灵龙语音助手</div>
+
+    <div class="conn-status">
+
+      <span class="conn-icon" id="connIcon"></span>
+
+      <span id="connText">未连接</span>
+
+    </div>
+
+  </div>
+
+  <div class="body" id="body">
+
+    <!-- 聊天面板 -->
+
+    <div id="chatPanel">
+
+      <div class="log-entry info">🤖 灵龙语音助手 v1.26 (com.leo.linglong) - 新增扫图与地图</div>
+
+      <div class="log-entry info">📶 待连接 DGX 后端 10.86.51.122:7778</div>
+
+      <div class="quick-cmds">
+
+        <div class="quick-cmd" onclick="quickCmd('上使能')">⚡ 上使能</div>
+
+        <div class="quick-cmd" onclick="quickCmd('归位')">🏠 归位</div>
+
+        <div class="quick-cmd" onclick="quickCmd('握紧左手')">✊ 握紧左手</div>
+
+        <div class="quick-cmd" onclick="quickCmd('松开左手')">🖐️ 松开左手</div>
+
+        <div class="quick-cmd" onclick="quickCmd('握紧右手')">✊ 握紧右手</div>
+
+        <div class="quick-cmd" onclick="quickCmd('松开右手')">🖐️ 松开右手</div>
+
+        <div class="quick-cmd" onclick="quickCmd('查状态')">📊 查状态</div>
+
+        <div class="quick-cmd" onclick="quickCmd('下使能')">⏹️ 下使能</div>
+
+      </div>
+
+      <div style="margin:12px 0; padding:10px; background:rgba(255,255,255,0.05); border-radius:10px; display:flex; align-items:center; gap:10px;">
+
+        <span style="font-size:13px;">🎛️ 模式:</span>
+
+        <button id="modeBtn" onclick="toggleMode()" style="flex:1; padding:8px; background:rgba(249,174,61,0.25); border:1px solid #f9ae3d; border-radius:8px; color:#f9ae3d; font-size:13px; cursor:pointer;">MOCK（仿真）</button>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- 底盘控制面板 (v1.20: 离散命令 + 服务端 watchdog) -->
+
+    <div id="chassisPanel" style="display:none;">
+
+      <div class="log-entry info">🚗 灵龙底盘控制 (v1.26: 整体反向 + 阿克曼 + 扫图/上载)</div>
+
+
+
+      <!-- 状态显示 -->
+
+      <div id="chassisStatusBox" style="margin:10px 0; padding:12px; background:rgba(255,255,255,0.05); border-radius:10px; font-size:13px;">
+
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+
+          <span>📍 位置</span><span id="chassisPos">--</span>
+
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+
+          <span>🔋 电量</span><span id="chassisBattery">--</span>
+
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+
+          <span>⏱️ 实际速度</span><span id="chassisSpeed">--</span>
+
+        </div>
+
+        <div style="display:flex; justify-content:space-between;">
+
+          <span>🟢 连接</span><span id="chassisConn">未连接</span>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- 速度调节 -->
+
+      <div style="margin:10px 0; padding:12px; background:rgba(255,255,255,0.05); border-radius:10px;">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+
+          <span style="font-size:13px;">🐢 速度上限</span>
+
+          <span id="speedLabel" style="font-size:13px; color:#5ac725; font-weight:700;">0.10 m/s</span>
+
+        </div>
+
+        <input type="range" id="speedSlider" min="0.01" max="0.10" step="0.01" value="0.10"
+
+               style="width:100%; accent-color:#5ac725;"
+
+               oninput="document.getElementById('speedLabel').textContent=this.value+' m/s'">
+
+        <div style="font-size:11px; color:#888; margin-top:4px;">硬限速 0.10 m/s（双层保护）</div>
+
+      </div>
+
+
+
+      <!-- 4 方向按钮 + 中央摇杆 -->
+
+      <div id="rockerContainer" style="position:relative; width:240px; height:240px; margin:16px auto;
+
+                                         background:rgba(255,255,255,0.04); border-radius:50%;
+
+                                         touch-action:none; user-select:none;">
+
+        <!-- 上 -->
+
+        <div class="dir-btn" data-dir="forward"
+
+             style="position:absolute; left:50%; top:8px; transform:translateX(-50%);
+
+                    width:60px; height:60px; border-radius:50%; background:rgba(60,156,255,0.3);
+
+                    border:2px solid #3c9cff; display:flex; align-items:center; justify-content:center;
+
+                    font-size:24px; cursor:pointer; user-select:none; touch-action:none;">
+
+          ↑
+
+        </div>
+
+        <!-- 下 -->
+
+        <div class="dir-btn" data-dir="back"
+
+             style="position:absolute; left:50%; bottom:8px; transform:translateX(-50%);
+
+                    width:60px; height:60px; border-radius:50%; background:rgba(60,156,255,0.3);
+
+                    border:2px solid #3c9cff; display:flex; align-items:center; justify-content:center;
+
+                    font-size:24px; cursor:pointer; user-select:none; touch-action:none;">
+
+          ↓
+
+        </div>
+
+        <!-- 左 -->
+
+        <div class="dir-btn" data-dir="rotate_left"
+
+             style="position:absolute; left:8px; top:50%; transform:translateY(-50%);
+
+                    width:60px; height:60px; border-radius:50%; background:rgba(60,156,255,0.3);
+
+                    border:2px solid #3c9cff; display:flex; align-items:center; justify-content:center;
+
+                    font-size:24px; cursor:pointer; user-select:none; touch-action:none;">
+
+          ↺
+
+        </div>
+
+        <!-- 右 -->
+
+        <div class="dir-btn" data-dir="rotate_right"
+
+             style="position:absolute; right:8px; top:50%; transform:translateY(-50%);
+
+                    width:60px; height:60px; border-radius:50%; background:rgba(60,156,255,0.3);
+
+                    border:2px solid #3c9cff; display:flex; align-items:center; justify-content:center;
+
+                    font-size:24px; cursor:pointer; user-select:none; touch-action:none;">
+
+          ↻
+
+        </div>
+
+        <!-- 中央 rocker 小球（可拖动） -->
+
+        <div id="rockerKnob"
+
+             style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+
+                    width:60px; height:60px; border-radius:50%; background:rgba(90,199,37,0.5);
+
+                    border:2px solid #5ac725; cursor:move; user-select:none; touch-action:none;">
+
+        </div>
+
+      </div>
+
+<!-- v1.26 扫图模块：位于摇杆下方 -->
+      <div style="margin:12px 16px; padding:10px; background:rgba(90,199,37,0.08); border:1px solid #5ac725; border-radius:10px;">
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <button id="btnStartSlam" onclick="startSlam()"
+                  style="flex:1; padding:10px; background:#1a73e8; color:white; border:none; border-radius:8px; font-size:13px; font-weight:700;">
+            开始扫图
+          </button>
+          <button id="btnStopSlam" onclick="stopSlam()" disabled
+                  style="flex:1; padding:10px; background:#ccc; color:#666; border:none; border-radius:8px; font-size:13px; font-weight:700;">
+            停止扫图
+          </button>
+          <button id="btnUploadMap" onclick="uploadMap()" disabled
+                  style="flex:1; padding:10px; background:#ccc; color:#666; border:none; border-radius:8px; font-size:13px; font-weight:700;">
+            上载地图
+          </button>
+        </div>
+        <div id="slamStatus" style="font-size:12px; color:#aaa; margin-bottom:4px;">状态: idle</div>
+        <div style="font-size:11px; color:#888; line-height:1.4;">
+          扫图→遥控走一圈→停止→上载(自动保存office1.smap)
+        </div>
+      </div>
+
+
+
+
+
+      <!-- 急停按钮 -->
+
+      <div style="margin:16px 0;">
+
+        <button onclick="chassisStop()"
+
+                style="width:100%; padding:14px; background:rgba(255,77,79,0.3); border:2px solid #ff4d4f;
+
+                       border-radius:10px; color:#ff4d4f; font-size:15px; font-weight:700; cursor:pointer;">
+
+          🛑 急停 (STOP)
+
+        </button>
+
+      </div>
+
+
+
+      <!-- 查询/刷新状态按钮 -->
+
+      <div style="margin:8px 0;">
+
+        <button onclick="chassisQuery()"
+
+                style="width:100%; padding:10px; background:rgba(60,156,255,0.2); border:1px solid #3c9cff;
+
+                       border-radius:10px; color:#3c9cff; font-size:13px; cursor:pointer;">
+
+          🔄 刷新状态
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- 底部 tab 切换 (v1.18 新增) -->
+
+  <div class="tab-bar">
+
+    <div class="tab-item active" id="tabChat" onclick="switchTab('chat')">
+
+      <div class="tab-icon">💬</div>
+
+      <div class="tab-label">聊天</div>
+
+    </div>
+
+    <div class="tab-item" id="tabChassis" onclick="switchTab('chassis')">
+
+      <div class="tab-icon">🚗</div>
+
+      <div class="tab-label">底盘</div>
+
+    </div>
+
+  </div>
+
+  <div class="voice-hint">💡 长按 🎙️ 说话，松开自动识别（中文）。需要授予录音和语音识别权限。</div>
+
+  <div class="input-area">
+
+    <div class="input-row">
+
+      <button class="btn voice" id="voiceBtn" onclick="toggleVoice()">🎙️</button>
+
+      <textarea class="input-box" id="inputBox" rows="1" placeholder="说或输入指令，按Enter发送"></textarea>
+
+      <button class="btn send" onclick="sendText()">📤</button>
+
+
+      
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+// 语音识别引擎选择：自写 NativeMic (Java MediaRecorder) > Web Speech API
+
+let CapVoice = null;  // NativeVoice plugin (legacy, broken on MagicOS)
+
+let CapMic = null;    // NativeMic plugin (new, Java native recording)
+
+let WebSR = null;
+
+let SR = null;
+
+
+
+// HTTP 引擎选择：Capacitor 原生（自写 NativeHttpPlugin）优先，回退到 fetch
+
+let CapHttp = null;
+
+let UseFetch = false;
+
+if (window.Capacitor?.Plugins?.NativeHttp) {
+
+  CapHttp = window.Capacitor.Plugins.NativeHttp;
+
+  console.log('[http] 使用原生 NativeHttp (Android HttpURLConnection)');
+
+} else {
+
+  UseFetch = true;
+
+  console.log('[http] 回退到浏览器 fetch');
+
+}
+
+
+
+if (window.Capacitor?.Plugins?.NativeMic) {
+
+  CapMic = window.Capacitor.Plugins.NativeMic;
+
+  console.log('[mic] 使用自写 NativeMic (Android MediaRecorder Java)');
+
+}
+
+if (window.Capacitor?.Plugins?.NativeVoice) {
+
+  CapVoice = window.Capacitor.Plugins.NativeVoice;
+
+  console.log('[voice] NativeVoice (Intent, broken on MagicOS)');
+
+}
+
+if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+
+  WebSR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  console.log('[voice] Web Speech API (only for HTML browser)');
+
+}
+
+if (!CapMic && !CapVoice && !WebSR) {
+
+  console.log('[voice/mic] 无可用语音引擎');
+
+}
+
+
+
+// 统一 HTTP 调用封装（NativeHttpPlugin / fetch 自动切换）
+
+async function httpRequest(url, method, body) {
+
+  if (CapHttp) {
+
+    const opts = {
+
+      url, method,
+
+      contentType: 'application/json',
+
+      connectTimeout: 10000,
+
+      readTimeout: 60000  // 60 秒：disable.py 要跑 13 秒，留足余量
+
+    };
+
+    if (body) opts.body = JSON.stringify(body);
+
+    const resp = await CapHttp.request(opts);
+
+    let data = null;
+
+    if (resp.body) {
+
+      try { data = JSON.parse(resp.body); } catch (e) { data = resp.body; }
+
+    }
+
+    return {ok: resp.ok, status: resp.status, data};
+
+  } else {
+
+    const opts = {method, headers: {'Content-Type': 'application/json'}};
+
+    if (body) opts.body = JSON.stringify(body);
+
+    const resp = await fetch(url, opts);
+
+    let data = null;
+
+    try { data = await resp.json(); } catch (e) {}
+
+    return {ok: resp.ok, status: resp.status, data};
+
+  }
+
+}
+
+
+
+// 封装 Web Speech API 为 Capacitor 风格
+
+function createWebSR() {
+
+  const recognizer = new WebSR();
+
+  recognizer.continuous = false;
+
+  recognizer.interimResults = true;
+
+  recognizer.lang = 'zh-CN';
+
+  recognizer.maxAlternatives = 1;
+
+  const listeners = {};
+
+  recognizer.onresult = (e) => {
+
+    let interim = '', final = '';
+
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+
+      const r = e.results[i];
+
+      if (r.isFinal) final += r[0].transcript;
+
+      else interim += r[0].transcript;
+
+    }
+
+    if (interim || final) {
+
+      (listeners.partialResults || []).forEach(cb => cb({
+
+        matches: [final || interim]
+
+      }));
+
+    }
+
+  };
+
+  recognizer.onerror = (e) => {
+
+    (listeners.error || []).forEach(cb => cb({error: e.error, message: e.message}));
+
+  };
+
+  recognizer.onend = () => {
+
+    (listeners.end || []).forEach(cb => cb());
+
+  };
+
+  return {
+
+    available: async () => ({available: true}),
+
+    hasPermission: async () => ({hasPermission: true}),
+
+    requestPermission: async () => ({hasPermission: true}),
+
+    start: async (opts) => {
+
+      if (opts?.language) recognizer.lang = opts.language;
+
+      recognizer.start();
+
+    },
+
+    stop: async () => recognizer.stop(),
+
+    addListener: (event, cb) => {
+
+      if (!listeners[event]) listeners[event] = [];
+
+      listeners[event].push(cb);
+
+    }
+
+  };
+
+}
+
+
+
+let isRecording = false;
+
+
+
+function setConnStatus(status, text) {
+
+  document.getElementById('connIcon').className = 'conn-icon ' + status;
+
+  document.getElementById('connText').textContent = text;
+
+}
+
+
+
+async function pingDGX() {
+
+  setConnStatus('connecting', '连接中...');
+
+  addLog('info', `📶 测试 DGX 连通性 (10.86.51.122:7778, ${UseFetch ? 'fetch' : 'Capacitor原生HTTP'})...`);
+
+  addLog('info', `🌐 WebView origin: ${window.location.origin}`);
+
+  try {
+
+    const resp = await httpRequest('http://10.86.51.122:7778/cmd', 'POST', {text: '查状态'});
+
+    if (resp.ok) {
+
+      setConnStatus('connected', '已连接（HTTP）');
+
+      addLog('system', `✅ DGX 已连接 (status ${resp.status})`);
+
+      return true;
+
+    }
+
+    setConnStatus('disconnected', `DGX 响应错误 (${resp.status})`);
+
+    addLog('error', `❌ DGX 响应错误: HTTP ${resp.status}`);
+
+    return false;
+
+  } catch (e) {
+
+    const errMsg = e?.message || e?.toString() || JSON.stringify(e) || 'unknown';
+
+    setConnStatus('disconnected', '连接失败: ' + errMsg);
+
+    addLog('error', `❌ DGX 连不上: ${errMsg}`);
+
+    addLog('info', `💡 排查: 1)WiFi同网 2)应用权限 3)DGX 端口`);
+
+    return false;
+
+  }
+
+}
+
+
+
+async function sendCmd(text) {
+
+  try {
+
+    const resp = await httpRequest('http://10.86.51.122:7778/cmd', 'POST', {text: text});
+
+    return resp.data || {status: 'error', msg: 'no response data'};
+
+  } catch (e) {
+
+    addLog('error', '❌ 发送失败: ' + (e?.message || e));
+
+    return {status: 'error', msg: e?.message || JSON.stringify(e)};
+
+  }
+
+}
+
+
+
+async function queryMode() {
+
+  try {
+
+    const resp = await httpRequest('http://10.86.51.122:7778/health', 'GET');
+
+    if (resp.ok && resp.data) return {new_mode: resp.data.mock};
+
+    return null;
+
+  } catch (e) {
+
+    return null;
+
+  }
+
+}
+
+
+
+async function setMode(mock) {
+
+  try {
+
+    const resp = await httpRequest('http://10.86.51.122:7778/mode', 'POST', {mock: mock});
+
+    if (resp.ok && resp.data) {
+
+      updateModeUI(resp.data.new_mode);
+
+      addLog('info', `🎛️ 模式已切换: ${resp.data.old_mode ? 'MOCK' : 'REAL'} → ${resp.data.new_mode ? 'MOCK' : 'REAL'}`);
+
+    }
+
+    return resp.data;
+
+  } catch (e) {
+
+    addLog('error', '❌ 模式切换失败: ' + (e?.message || e));
+
+  }
+
+}
+
+
+
+function updateModeUI(isMock) {
+
+  const btn = document.getElementById('modeBtn');
+
+  if (isMock) {
+
+    btn.textContent = 'MOCK（仿真）';
+
+    btn.style.background = 'rgba(249,174,61,0.25)';
+
+    btn.style.borderColor = '#f9ae3d';
+
+    btn.style.color = '#f9ae3d';
+
+  } else {
+
+    btn.textContent = 'REAL（实控）';
+
+    btn.style.background = 'rgba(90,199,37,0.25)';
+
+    btn.style.borderColor = '#5ac725';
+
+    btn.style.color = '#5ac725';
+
+  }
+
+}
+
+
+
+// ================= 云端 ASR (NativeMic → DGX :7780/asr) =================
+
+// 用 Java MediaRecorder（自写 NativeMicPlugin）录音，绕开 WebView getUserMedia 坑
+
+
+
+async function startVoiceRecorder() {
+
+  // 路径 1：Java 原生录音（CapMic）
+
+  if (CapMic) {
+
+    addLog('info', '🎙️ 开始 Java 原生录音（5 秒）...');
+
+    isRecording = true;
+
+    document.getElementById('voiceBtn').classList.add('recording');
+
+
+
+    try {
+
+      const recResult = await CapMic.record({ seconds: 5 });
+
+      addLog('info', `🎙️ 录音完成: ${(recResult.size / 1024).toFixed(1)} KB (${recResult.mimeType})`);
+
+      isRecording = false;
+
+      document.getElementById('voiceBtn').classList.remove('recording');
+
+
+
+      // 上传到 DGX
+
+      addLog('info', '📤 上传音频到 DGX 识别...');
+
+      const resp = await CapHttp.upload({
+
+        url: 'http://10.86.51.122:7780/asr',
+
+        fileBase64: recResult.audio,
+
+        fileName: 'voice.m4a',
+
+        fieldName: 'audio',
+
+        contentType: recResult.mimeType,
+
+        fields: { language: 'Chinese' },
+
+        connectTimeout: 10000,
+
+        readTimeout: 30000
+
+      });
+
+      if (resp.ok) {
+
+        const data = JSON.parse(resp.body);
+
+        // 隐藏 DGX 原始 ASR 结果行（2026-09-07 Leo 要求不显示）
+
+        // addLog('system', `✅ DGX 识别: "${data.text}" (${data.language}, ${data.elapsed_sec}s)`);
+
+        if (data.text) {
+
+          document.getElementById('inputBox').value = data.text;
+
+          setTimeout(() => sendText(), 200);
+
+        } else {
+
+          addLog('warn', '⚠️ 识别结果为空，请再说一次');
+
+        }
+
+      } else {
+
+        throw new Error('HTTP ' + resp.status + ': ' + resp.body);
+
+      }
+
+    } catch (e) {
+
+      isRecording = false;
+
+      document.getElementById('voiceBtn').classList.remove('recording');
+
+      addLog('error', '❌ 录音失败: ' + (e?.message || e));
+
+      if (e?.message?.includes('权限') || e?.message?.includes('permission')) {
+
+        addLog('info', '💡 系统设置 → 应用 → 灵龙语音助手 → 权限 → 麦克风');
+
+      }
+
+      throw e;
+
+    }
+
+    return;
+
+  }
+
+
+
+  // 路径 2：WebView getUserMedia 兜底（HTML 版可能可用）
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+
+    addLog('info', '🎙️ 回退到 WebView getUserMedia...');
+
+    let stream;
+
+    try {
+
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    } catch (e) {
+
+      throw new Error('WebView 麦克风也被拒绝: ' + (e?.message || e));
+
+    }
+
+    const recorder = new MediaRecorder(stream);
+
+    const chunks = [];
+
+    recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+    recorder.onstop = async () => {
+
+      stream.getTracks().forEach(t => t.stop());
+
+      const blob = new Blob(chunks);
+
+      const b64 = await new Promise((resolve) => {
+
+        const reader = new FileReader();
+
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+
+        reader.readAsDataURL(blob);
+
+      });
+
+      // upload via CapHttp
+
+      try {
+
+        const resp = await CapHttp.upload({
+
+          url: 'http://10.86.51.122:7780/asr',
+
+          fileBase64: b64,
+
+          fileName: 'voice.webm',
+
+          fieldName: 'audio',
+
+          contentType: 'audio/webm',
+
+          fields: { language: 'Chinese' }
+
+        });
+
+        if (resp.ok) {
+
+          const data = JSON.parse(resp.body);
+
+          addLog('system', `✅ 识别: "${data.text}"`);
+
+          if (data.text) {
+
+            document.getElementById('inputBox').value = data.text;
+
+            setTimeout(() => sendText(), 200);
+
+          }
+
+        }
+
+      } catch (e) {
+
+        addLog('error', '上传失败: ' + (e?.message || e));
+
+      }
+
+    };
+
+    isRecording = true;
+
+    document.getElementById('voiceBtn').classList.add('recording');
+
+    recorder.start();
+
+    setTimeout(() => {
+
+      if (recorder.state === 'recording') recorder.stop();
+
+      isRecording = false;
+
+      document.getElementById('voiceBtn').classList.remove('recording');
+
+    }, 5000);
+
+    return;
+
+  }
+
+
+
+  throw new Error('没有可用的录音方式');
+
+}
+
+
+
+async function toggleMode() {
+
+  const btn = document.getElementById('modeBtn');
+
+  const isMock = btn.textContent.includes('MOCK');
+
+  setMode(!isMock);
+
+}
+
+
+
+async function sendText() {
+
+  const input = document.getElementById('inputBox');
+
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  input.value = '';
+
+  const result = await sendCmd(text);
+
+  // 优先用服务器返回的 recognized（纠正后文字）显示用户消息
+
+  const corrected = (result && result.recognized && result.recognized !== text) ? result.recognized : text;
+
+  const suffix = (result && result.recognized && result.recognized !== text) ? ' (已纠正)' : '';
+
+  addLog('user', '👤 ' + corrected + suffix);
+
+  if (result && result.status === 'ok') addLog('system', '🤖 ' + result.response);
+
+  else if (result && result.status === 'unknown') addLog('warn', '🤖 ' + result.response);
+
+  else addLog('error', '🤖 ' + ((result && result.msg) || JSON.stringify(result)));
+
+}
+
+
+
+function quickCmd(text) {
+
+  document.getElementById('inputBox').value = text;
+
+  sendText();
+
+}
+
+
+
+function toggleVoice() {
+
+  if (isRecording) stopVoice();
+
+  else startVoice();
+
+}
+
+
+
+async function startVoice() {
+
+  // 初始化 SR（按当前可用引擎）
+
+  if (!CapVoice && !SR && WebSR) SR = createWebSR();
+
+
+
+  if (!CapVoice && !SR) {
+
+    addLog('error', '❌ 当前浏览器不支持语音识别');
+
+    addLog('info', '💡 解决方案：换 Chrome / Edge 浏览器，或装原生 APK');
+
+    return;
+
+  }
+
+  const engine = CapVoice || SR;
+
+  // 检测引擎支持的方法
+
+  const has = (m) => engine && typeof engine[m] === 'function';
+
+  if (!has('available') || !has('start')) {
+
+    addLog('error', '❌ 语音引擎 API 不兼容，缺少 available/start');
+
+    return;
+
+  }
+
+  try {
+
+    // 1) 检查设备是否支持语音识别
+
+    const available = await engine.available();
+
+    if (!available.available) {
+
+      addLog('error', '❌ 设备无语音识别服务（请安装"语音输入"类 App，如 Google、华为智慧语音）');
+
+      return;
+
+    }
+
+    // 2) 唯一路径：MediaRecorder → DGX 本地 ASR (Qwen3-ASR 0.6B)
+
+    // NativeVoice (Intent) / Web Speech API 全部废弃（在 MagicOS 上不可用）
+
+    if (CapHttp) {
+
+      await startVoiceRecorder();
+
+      return;
+
+    }
+
+    addLog('error', '❌ CapHttp 未加载，无法上传音频');
+
+    return;
+
+
+
+    // 3) NativeVoice (Intent) 路径：UI 简洁，但需要 isRecording 状态等待系统回调
+
+    if (false && CapVoice) {  // 永久禁用：MagicOS 上无 Intent handler
+
+      isRecording = true;
+
+      document.getElementById('voiceBtn').classList.add('recording');
+
+      addLog('info', '🎙️ 启动系统语音输入...');
+
+      addLog('info', '💡 弹出系统对话框后，点击麦克风说话');
+
+      addLog('info', `📋 方法: ${available.method}`);
+
+      try {
+
+        await engine.start({
+
+          language: 'zh-CN',
+
+          prompt: '請說指令（如"歸位""上使能"）',
+
+          maxResults: 1
+
+        });
+
+        addLog('system', '✅ 識別流程結束');
+
+      } catch (e) {
+
+        addLog('error', '❌ 語音輸入失败: ' + (e?.message || e));
+
+      } finally {
+
+        isRecording = false;
+
+        document.getElementById('voiceBtn').classList.remove('recording');
+
+      }
+
+      return;
+
+    }
+
+
+
+    // 4) Web Speech API 路径（HTML 版用，浏览器里仍可用）
+
+    if (false && !CapHttp && WebSR) {  // 永久禁用在 APP
+
+      isRecording = true;
+
+      document.getElementById('voiceBtn').classList.add('recording');
+
+      addLog('info', '🎙️ 正在录音（Web）...');
+
+      if (engine.start.length === 0) {
+
+        engine.start({ language: 'zh-CN', maxResults: 1, partialResults: true, popup: false })
+
+          .then(() => addLog('system', '✅ 識別完成'))
+
+          .catch((e) => addLog('warn', '識別结束: ' + (e?.message || e)))
+
+          .finally(() => {
+
+            isRecording = false;
+
+            document.getElementById('voiceBtn').classList.remove('recording');
+
+          });
+
+      } else {
+
+        try {
+
+          await engine.start({ language: 'zh-CN', maxResults: 1, partialResults: true, popup: false });
+
+        } catch (e) {
+
+          addLog('error', 'Web start 失败: ' + e);
+
+          isRecording = false;
+
+          document.getElementById('voiceBtn').classList.remove('recording');
+
+        }
+
+      }
+
+      setTimeout(() => { if (isRecording) forceStopVoice(); }, 15000);
+
+      return;
+
+    }
+
+
+
+    addLog('error', '❌ 当前环境不支持语音输入（需要 CapHttp 或 WebSR）');
+
+  } catch (e) {
+
+    isRecording = false;
+
+    document.getElementById('voiceBtn').classList.remove('recording');
+
+    addLog('error', '❌ 启动失败: ' + (e.message || JSON.stringify(e)));
+
+    if (e.message?.includes('permission') || e.message?.includes('权限')) {
+
+      addLog('info', '💡 请到 系统设置 → 应用 → 灵龙语音助手 → 权限 → 允许麦克风');
+
+    }
+
+  }
+
+}
+
+
+
+async function stopVoice() {
+
+  // ⚡ UI 状态先于 await 重置——保证一定能退出录音状态
+
+  isRecording = false;
+
+  document.getElementById('voiceBtn').classList.remove('recording');
+
+  const engine = CapVoice || SR;
+
+  if (!engine) return;
+
+  try {
+
+    // 1 秒超时（plugin.stop() 在 HiVoice 上可能挂起）
+
+    await Promise.race([
+
+      Promise.resolve(engine.stop()),
+
+      new Promise(resolve => setTimeout(resolve, 1000))
+
+    ]);
+
+  } catch (e) {
+
+    // 静默忽略——状态已重置
+
+  }
+
+}
+
+
+
+// 强制停止（用于超时）
+
+function forceStopVoice() {
+
+  isRecording = false;
+
+  document.getElementById('voiceBtn').classList.remove('recording');
+
+  const engine = CapVoice || SR;
+
+  if (engine && typeof engine.stop === 'function') {
+
+    try { engine.stop(); } catch (e) {}
+
+  }
+
+  addLog('info', '🛑 强制停止录音');
+
+}
+
+
+
+// 监听语音识别事件（NativeVoice + Web Speech 兼容）
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  const setupListener = async () => {
+
+    let engine = CapVoice;
+
+    if (!engine && WebSR) {
+
+      SR = createWebSR();
+
+      engine = SR;
+
+    }
+
+    if (engine) {
+
+      // partialResults → 填入输入框 + 自动发送
+
+      engine.addListener('partialResults', (data) => {
+
+        if (data.matches && data.matches.length > 0) {
+
+          const text = data.matches[0];
+
+          document.getElementById('inputBox').value = text;
+
+          addLog('info', '🎙️ 识别: ' + text);
+
+          // NativeVoice 路径：自动发送命令
+
+          if (CapVoice && !data.cancelled) {
+
+            addLog('info', '📤 自动发送命令: ' + text);
+
+            setTimeout(() => sendText(), 200);
+
+          }
+
+        }
+
+      });
+
+      // voiceEnd（NativeVoice 专属）
+
+      engine.addListener('voiceEnd', (data) => {
+
+        if (data.cancelled) {
+
+          addLog('warn', '🎙️ 用户取消语音输入');
+
+        } else {
+
+          addLog('system', '🎙️ 语音输入结束');
+
+        }
+
+        isRecording = false;
+
+        document.getElementById('voiceBtn').classList.remove('recording');
+
+      });
+
+      // listening 事件（Web Speech 用）
+
+      engine.addListener('listening', (data) => {
+
+        if (data && data.status === 'stopped') {
+
+          isRecording = false;
+
+          document.getElementById('voiceBtn').classList.remove('recording');
+
+        }
+
+      });
+
+      // 错误
+
+      engine.addListener('error', (data) => {
+
+        addLog('error', '❌ 识别错误: ' + (data.message || data.error || JSON.stringify(data)));
+
+        isRecording = false;
+
+        document.getElementById('voiceBtn').classList.remove('recording');
+
+      });
+
+    } else {
+
+      console.log('No speech recognition available');
+
+    }
+
+  };
+
+  setupListener();
+
+});
+
+
+
+// v1.19 修复：Capacitor WebView 时序问题，DOMContentLoaded 可能不触发
+
+// 直接调用，不依赖事件（脚本在 HTML 末尾，DOM 此时已就绪）
+
+bindDirButtons();
+
+bindRocker();
+
+
+
+// ================= v1.22 底盘控制 (chassis_server DGX :7781, B 方案 + 心跳) =================
+
+const CHASSIS_URL = 'http://10.86.51.122:7781';
+
+const CHASSIS_MAX_SPEED = 0.1;  // 硬上限 m/s (Leo 13:22 指示)
+
+const CHASSIS_HEARTBEAT_MS = 500;  // 心跳间隔 500ms（Leo 2026-09-08 12:57 指示）
+
+// v1.22 新增：session_id（防 APP 重启旧命令继续）
+
+const CHASSIS_SESSION_ID = 'app_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+
+let chassisPollTimer = null;
+
+let chassisHeartbeatTimer = null;  // v1.22 新增：心跳定时器
+
+
+
+// Tab 切换
+
+function switchTab(tab) {
+
+  const chatPanel = document.getElementById('chatPanel');
+
+  const chassisPanel = document.getElementById('chassisPanel');
+
+  const tabChat = document.getElementById('tabChat');
+
+  const tabChassis = document.getElementById('tabChassis');
+
+  if (tab === 'chat') {
+
+    chatPanel.style.display = '';
+
+    chassisPanel.style.display = 'none';
+
+    tabChat.classList.add('active');
+
+    tabChassis.classList.remove('active');
+
+    // v1.22: 离开底盘页 → 停 heartbeat + 主动 stop（防切后台时车继续跑）
+
+    if (chassisHeartbeatTimer) { clearInterval(chassisHeartbeatTimer); chassisHeartbeatTimer = null; }
+
+    chassisStop();  // 主动 stop
+
+  } else {
+
+    chatPanel.style.display = 'none';
+
+    chassisPanel.style.display = '';
+
+    tabChat.classList.remove('active');
+
+    tabChassis.classList.add('active');
+
+    // 进入底盘页时启动轮询 + 立即查一次
+
+    chassisQuery();
+
+    if (chassisPollTimer) clearInterval(chassisPollTimer);
+
+    chassisPollTimer = setInterval(chassisQuery, 3000);
+
+    // v1.22: 启动心跳（500ms 一次）+ 立即发一次
+
+    chassisHeartbeat();
+
+    if (chassisHeartbeatTimer) clearInterval(chassisHeartbeatTimer);
+
+    chassisHeartbeatTimer = setInterval(chassisHeartbeat, CHASSIS_HEARTBEAT_MS);
+
+  }
+
+}
+
+
+
+// 速度硬限速（双层保护）
+
+function clampChassisSpeed(vx, omega) {
+
+  vx = Math.max(-CHASSIS_MAX_SPEED, Math.min(CHASSIS_MAX_SPEED, vx));
+
+  omega = Math.max(-CHASSIS_MAX_SPEED, Math.min(CHASSIS_MAX_SPEED, omega));
+
+  return [vx, omega];
+
+}
+
+
+
+// v1.22 B 方案：按下 → start；松开 → stop；服务端后台循环 vel
+
+async function chassisStart(vx, omega) {
+
+  [vx, omega] = clampChassisSpeed(vx, omega);
+
+  if (vx === 0 && omega === 0) {
+
+    // 摇杆回中时会传 0,0，直接 stop 即可
+
+    return chassisStop();
+
+  }
+
+  try {
+
+    const resp = await httpRequest(CHASSIS_URL + '/chassis/start', 'POST',
+
+      {vx: vx, omega: omega, session_id: CHASSIS_SESSION_ID});
+
+    if (resp.ok) {
+
+      document.getElementById('chassisConn').textContent = '已连接 (动)';
+
+      document.getElementById('chassisConn').style.color = '#5ac725';
+
+    } else {
+
+      document.getElementById('chassisConn').textContent = '错误 ' + (resp.status || '?');
+
+      document.getElementById('chassisConn').style.color = '#ff4d4f';
+
+    }
+
+  } catch (e) {
+
+    document.getElementById('chassisConn').textContent = '连接失败';
+
+    document.getElementById('chassisConn').style.color = '#ff4d4f';
+
+  }
+
+}
+
+
+
+async function chassisStop() {
+
+  try {
+
+    await httpRequest(CHASSIS_URL + '/chassis/stop', 'POST',
+
+      {session_id: CHASSIS_SESSION_ID});
+
+    document.getElementById('chassisConn').textContent = '已停止';
+
+    document.getElementById('chassisConn').style.color = '#f9ae3d';
+
+  } catch (e) {
+
+    document.getElementById('chassisConn').textContent = '停止失败';
+
+    document.getElementById('chassisConn').style.color = '#ff4d4f';
+
+  }
+
+}
+
+
+
+// v1.22 新增：心跳（500ms 一次，漏 2 次服务端自动停）
+
+async function chassisHeartbeat() {
+
+  try {
+
+    await httpRequest(CHASSIS_URL + '/chassis/heartbeat', 'POST',
+
+      {session_id: CHASSIS_SESSION_ID});
+
+  } catch (e) {
+
+    // 心跳失败静默（不影响其他功能）
+
+  }
+
+}
+
+
+
+// 保留 vel 单次接口（兼容旧逻辑，v1.22 dir-btn/rocker 不用）
+
+async function chassisSendVel(vx, omega) {
+
+  [vx, omega] = clampChassisSpeed(vx, omega);
+
+  if (vx === 0 && omega === 0) return;
+
+  try {
+
+    const resp = await httpRequest(CHASSIS_URL + '/chassis/vel', 'POST',
+
+      {vx: vx, omega: omega});
+
+    if (resp.ok) {
+
+      document.getElementById('chassisConn').textContent = '已连接';
+
+      document.getElementById('chassisConn').style.color = '#5ac725';
+
+    } else {
+
+      document.getElementById('chassisConn').textContent = '错误 ' + (resp.status || '?');
+
+      document.getElementById('chassisConn').style.color = '#ff4d4f';
+
+    }
+
+  } catch (e) {
+
+    document.getElementById('chassisConn').textContent = '连接失败';
+
+    document.getElementById('chassisConn').style.color = '#ff4d4f';
+
+  }
+
+}
+
+
+
+async function chassisQuery() {
+
+  try {
+
+    const resp = await httpRequest(CHASSIS_URL + '/chassis/query', 'POST', {});
+
+    if (resp.ok && resp.data && resp.data.status === 'ok') {
+
+      const d = resp.data;
+
+      const t = (typeof d.translation === 'number') ? d.translation.toFixed(3) : '--';
+
+      const r = (typeof d.rotation === 'number') ? d.rotation.toFixed(3) : '--';
+
+      const b = (typeof d.battery === 'number') ? (d.battery * 100).toFixed(0) + '%' : '--';
+
+      document.getElementById('chassisPos').textContent = 'v=' + t + ' w=' + r;
+
+      document.getElementById('chassisBattery').textContent = b;
+
+      document.getElementById('chassisSpeed').textContent = 't=' + t + ' r=' + r;
+
+      document.getElementById('chassisConn').textContent = '已连接';
+
+      document.getElementById('chassisConn').style.color = '#5ac725';
+
+    } else {
+
+      const msg = (resp.data && resp.data.msg) ? resp.data.msg : (resp.status || '?');
+
+      document.getElementById('chassisConn').textContent = '查询失败: ' + msg;
+
+      document.getElementById('chassisConn').style.color = '#f9ae3d';
+
+    }
+
+  } catch (e) {
+
+    document.getElementById('chassisConn').textContent = '离线';
+
+    document.getElementById('chassisConn').style.color = '#ff4d4f';
+
+  }
+
+}
+
+
+
+// v1.22 方向按钮：B 方案，touchstart → start{...}，touchend → stop
+
+// 服务端后台 vel_loop 持续下发，watchdog 兜底（心跳超时 / 单次 2s 超时）
+
+function bindDirButtons() {
+
+  document.querySelectorAll('.dir-btn').forEach(btn => {
+
+    const dir = btn.getAttribute('data-dir');
+
+    const start = (e) => {
+
+      e.preventDefault();
+
+      btn.classList.add('active');  // 视觉反馈：按下时高亮
+
+      const speed = parseFloat(document.getElementById('speedSlider').value);
+
+      let v = 0, w = 0;
+
+      if (dir === 'forward') v = speed;
+
+      else if (dir === 'back') v = -speed;
+
+      else if (dir === 'rotate_left') w = speed;
+
+      else if (dir === 'rotate_right') w = -speed;
+
+      chassisStart(v, w);  // B 方案：发 start，服务端后台持续 vel
+
+    };
+
+    const end = () => {
+
+      btn.classList.remove('active');
+
+      chassisStop();  // 发 stop
+
+    };
+
+    // 只绑 touch 事件，不绑 mouse（避免 Capacitor WebView 合成 mouse 事件干扰）
+
+    btn.addEventListener('touchstart', start, {passive: false});
+
+    btn.addEventListener('touchend', end);
+
+    btn.addEventListener('touchcancel', end);
+
+  });
+
+}
+
+
+
+// v1.22 中央 rocker 拖动：B 方案，touchmove 数据变化时 start{新速度}，touchend stop
+
+// 服务端后台 vel_loop + watchdog 兜底（心跳超时 1s / 单次最长 2s）
+
+function bindRocker() {
+
+  const knob = document.getElementById('rockerKnob');
+
+  const container = document.getElementById('rockerContainer');
+
+  let dragging = false;
+
+  let centerX = 0, centerY = 0;
+
+  let lastSentVx = 0, lastSentW = 0;
+
+
+
+  const updatePos = () => {
+
+    const rect = container.getBoundingClientRect();
+
+    centerX = rect.width / 2;
+
+    centerY = rect.height / 2;
+
+  };
+
+
+
+  const start = (e) => {
+
+    e.preventDefault();
+
+    dragging = true;
+
+    updatePos();
+
+    knob.style.background = 'rgba(90,199,37,0.8)';
+
+  };
+
+  const move = (e) => {
+
+    if (!dragging) return;
+
+    e.preventDefault();
+
+    const t = e.touches ? e.touches[0] : e;
+
+    const rect = container.getBoundingClientRect();
+
+    let dx = t.clientX - (rect.left + centerX);
+
+    let dy = t.clientY - (rect.top + centerY);
+
+    // 限制在容器圆内
+
+    const maxR = Math.min(rect.width, rect.height) / 2 - 30;
+
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if (dist > maxR) { dx = dx * maxR / dist; dy = dy * maxR / dist; }
+
+    knob.style.left = (rect.width/2 + dx) + 'px';
+
+    knob.style.top = (rect.height/2 + dy) + 'px';
+
+    knob.style.transform = 'translate(-50%,-50%)';
+
+    // v1.25: 整体反向左右（Leo 2026-09-09 11:06 实测）
+
+    // 服务端 chassis_server_v1.23 已实现阿克曼反向 (rotation_sent = -omega if vx<0)
+
+    // Leo 实测：左推 dx<0 → 整体右移（前进右前/后退右下）；右推 dx>0 → 整体左移
+
+    // 修法：APP 端把 w 符号取反即可（服务端阿克曼保持）
+
+    const maxSpeed = parseFloat(document.getElementById('speedSlider').value);
+
+    const vx = -(dy / maxR) * maxSpeed;  // 不变：dy<0 前进，dy>0 后退
+
+    const w  = -(dx / maxR) * maxSpeed;  // 取反：dx<0 → w>0 左转，dx>0 → w<0 右转
+
+    // v1.22: 只在数据变化时发 start（避免每帧重发）
+
+    if (Math.abs(vx - lastSentVx) > 0.005 || Math.abs(w - lastSentW) > 0.005) {
+
+      chassisStart(vx, w);  // 重新 start 用新速度
+
+      lastSentVx = vx;
+
+      lastSentW = w;
+
+    }
+
+  };
+
+  const end = () => {
+
+    dragging = false;
+
+    knob.style.background = 'rgba(90,199,37,0.5)';
+
+    // 回中
+
+    knob.style.transition = 'left 0.2s, top 0.2s';
+
+    knob.style.left = '50%';
+
+    knob.style.top = '50%';
+
+    knob.style.transform = 'translate(-50%,-50%)';
+
+    setTimeout(() => knob.style.transition = '', 250);
+
+    chassisStop();  // 发 stop
+
+    lastSentVx = 0;
+
+    lastSentW = 0;
+
+  };
+
+
+
+  // v1.22: 只绑 touch 事件，不绑 mouse（避免 Capacitor WebView 合成 mouse 事件干扰）
+
+  knob.addEventListener('touchstart', start, {passive: false});
+
+  knob.addEventListener('touchmove', move, {passive: false});
+
+  knob.addEventListener('touchend', end);
+
+  knob.addEventListener('touchcancel', end);
+
+}
+
+
+
+function addLog(type, msg) {
+
+  const body = document.getElementById('body');
+
+  const div = document.createElement('div');
+
+  div.className = 'log-entry ' + type;
+
+  div.textContent = msg;
+
+  body.appendChild(div);
+
+  body.scrollTop = body.scrollHeight;
+
+}
+
+
+
+document.getElementById('inputBox').addEventListener('keydown', (e) => {
+
+  if (e.key === 'Enter' && !e.shiftKey) {
+
+    e.preventDefault();
+
+    sendText();
+
+  }
+
+});
+
+
+
+// 启动时自动 ping DGX
+
+pingDGX();
+
+setTimeout(async () => {
+
+  const m = await queryMode();
+
+  if (m) {
+
+    updateModeUI(m.new_mode);
+
+    addLog('info', `🎛️ 当前模式: ${m.new_mode ? 'MOCK（仿真）' : 'REAL（实控）'}`);
+
+  }
+
+}, 500);
+
+
+// ================= v1.26 扫图与地图上载 =================
+const SLAM_URL = 'http://10.86.51.122:7794';
+let slamState = 'idle';  // 'idle' | 'scanning' | 'uploading'
+
+function updateSlamUI() {
+  const btnStart = document.getElementById('btnStartSlam');
+  const btnStop = document.getElementById('btnStopSlam');
+  const btnUpload = document.getElementById('btnUploadMap');
+  const status = document.getElementById('slamStatus');
+  if (slamState === 'idle') {
+    btnStart.disabled = false; btnStart.style.background = '#1a73e8'; btnStart.style.animation = '';
+    btnStop.disabled = true; btnStop.style.background = '#ccc';
+    btnUpload.disabled = false; btnUpload.style.background = '#1a73e8'; btnUpload.style.animation = '';
+    status.textContent = '状态: idle (按 [开始扫图] 启动)'; status.style.color = '#aaa';
+  } else if (slamState === 'scanning') {
+    btnStart.disabled = true; btnStart.style.background = '#e53935'; btnStart.style.animation = 'pulse 1s infinite';
+    btnStop.disabled = false; btnStop.style.background = '#f9ae3d';
+    btnUpload.disabled = true; btnUpload.style.background = '#ccc'; btnUpload.style.animation = '';
+    status.textContent = '状态: 扫图中... 请遥控 AGV 在场地内慢走一圈'; status.style.color = '#ff4d4f';
+  } else if (slamState === 'uploading') {
+    btnStart.disabled = true; btnStart.style.background = '#ccc'; btnStart.style.animation = '';
+    btnStop.disabled = true; btnStop.style.background = '#ccc';
+    btnUpload.disabled = true; btnUpload.style.background = '#f9ae3d'; btnUpload.style.animation = 'pulse 1s infinite';
+    status.textContent = '状态: 获取点云 + 上传加载中...'; status.style.color = '#f9ae3d';
+  }
+}
+
+async function startSlam() {
+  if (slamState !== 'idle') return;
+  try {
+    slamState = 'scanning';
+    updateSlamUI();
+    addLog('system', 'v1.26: 触发 6100 扫图...');
+    const resp = await httpRequest(SLAM_URL + '/agv/slam/start', 'POST', {
+      slam_type: 2, real_time: true, screen_width: 1280, screen_height: 720
+    });
+    if (resp.ok && (resp.data?.ret_code === 0 || resp.data?.status === 'ok')) {
+      addLog('system', '6100 扫图已开始 (ret_code=' + (resp.data?.ret_code || '?') + ')');
+    } else {
+      const msg = resp.data?.msg || JSON.stringify(resp.data);
+      addLog('error', '6100 失败: ' + msg);
+      alert('6100 扫图启动失败: ' + msg);
+      slamState = 'idle';
+      updateSlamUI();
+    }
+  } catch (e) {
+    addLog('error', 'DGX :7794 不通: ' + (e?.message || e));
+    alert('无法连接 DGX 扫图服务 (:7794)');
+    slamState = 'idle';
+    updateSlamUI();
+  }
+}
+
+async function stopSlam() {
+  try {
+    const resp = await httpRequest(SLAM_URL + '/agv/slam/stop', 'POST', {});
+    if (resp.ok) {
+      addLog('system', '6101 扫图已停止 (等待点云生成)');
+      slamState = 'idle';
+      updateSlamUI();
+    } else {
+      addLog('error', '6101 失败: ' + JSON.stringify(resp.data));
+    }
+  } catch (e) {
+    addLog('error', 'stopSlam 失败: ' + (e?.message || e));
+  }
+}
+
+async function uploadMap() {
+  if (slamState !== 'idle') return;
+  try {
+    slamState = 'uploading';
+    updateSlamUI();
+    addLog('system', '1025 获取 resultmap + 2025 上传加载...');
+    const resp = await httpRequest(SLAM_URL + '/agv/slam/upload', 'POST', {
+      timeout_sec: 300,
+      map_name: 'office1.smap',
+      load_to_agv: true
+    });
+    if (resp.ok && (resp.data?.ret_code === 0 || resp.data?.status === 'ok')) {
+      const size = resp.data?.map_size_bytes || 0;
+      addLog('system', '地图已保存到 DGX 并加载到 AGV (' + (size/1024).toFixed(0) + ' KB)');
+      alert('地图加载成功!\n\n文件: ' + (resp.data?.map_saved_to || 'office1.smap') + '\n大小: ' + (size/1024).toFixed(0) + ' KB');
+    } else {
+      const msg = resp.data?.msg || JSON.stringify(resp.data);
+      addLog('error', '上载失败: ' + msg);
+      alert('上载失败: ' + msg);
+    }
+  } catch (e) {
+    addLog('error', 'uploadMap 失败: ' + (e?.message || e));
+  } finally {
+    slamState = 'idle';
+    updateSlamUI();
+  }
+}
+
+</script>
+
+</body>
+
+</html>
+
