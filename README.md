@@ -84,6 +84,7 @@ watchdog 自动停 · DRYRUN 空跑 · 打包闸门与 11 项单测。
 ## 说明与致谢
 
 - 安卓操控 APP（取代原厂遥操手柄/VR）在 GitHub Release 资产中下载
+- 背景音乐：Erik Satie《Gymnopédie No.1》，Kevin MacLeod 演奏（incompetech.com），[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - 本项目为开发范式实证案例，服务绑定特定硬件，复现需同型号设备
 - ⚠️ 所有服务监听 0.0.0.0 且无鉴权，仅限可信内网部署
 
